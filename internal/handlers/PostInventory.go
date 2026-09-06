@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"time"
 
 	"warframe-checker/internal/models"
 )
@@ -26,7 +27,6 @@ type InventoryResponse struct {
 }
 
 func getVaultedStatus(h *Handler, itemName string) bool {
-	log.Printf("getVaultedStatus called with: %q\n", itemName)
 	lower := strings.ReplaceAll(strings.ToLower(itemName), "_", " ")
 	if !strings.Contains(lower, "prime") {
 		return false
@@ -37,7 +37,7 @@ func getVaultedStatus(h *Handler, itemName string) bool {
 		parentName = strings.Join(words[:2], " ")
 	}
 	var item models.WFCDItem
-	queryURL := h.WFCD_API + "items/" + url.PathEscape(parentName)
+	queryURL := h.WFCD_API + "items/" + url.PathEscape(parentName) + "?only=vaulted"
 	if err := fetchJson(queryURL, &item); err != nil {
 		log.Println(err)
 		return false
@@ -66,6 +66,7 @@ func getPrices(h *Handler, itemName string) []models.OrderFilter {
 }
 
 func (h *Handler) PostInventory(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
 	log.Println("PostInventory")
 	var req InventoryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -81,21 +82,31 @@ func (h *Handler) PostInventory(w http.ResponseWriter, r *http.Request) {
 	results := make(chan InventoryItemResponse, len(req.Items))
 	var wg sync.WaitGroup
 
+	log.Printf("PostInventory called with %d items\n", len(req.Items))
 	for _, item := range req.Items {
-		wg.Add(1)
-		go func(item models.InventoryItem) {
-			defer wg.Done()
-			price := getPrices(h, item.Name)
+		wg.Go(func() {
+			var price []models.OrderFilter
+			var isVaulted bool
+
+			innerWg := sync.WaitGroup{}
+			innerWg.Go(func() {
+				price = getPrices(h, item.Name)
+			})
+			innerWg.Go(func() {
+				isVaulted = getVaultedStatus(h, item.Name)
+			})
+			innerWg.Wait()
+
 			if price == nil {
 				return
 			}
-			isVaulted := getVaultedStatus(h, item.Name)
+
 			results <- InventoryItemResponse{
 				Name:      item.Name,
 				IsVaulted: isVaulted,
 				Prices:    price,
 			}
-		}(item)
+		})
 	}
 
 	go func() {
@@ -108,6 +119,7 @@ func (h *Handler) PostInventory(w http.ResponseWriter, r *http.Request) {
 		responses = append(responses, r)
 	}
 
+	log.Printf("PostInventory took %v\n", time.Since(start))
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(InventoryResponse{Items: responses})
