@@ -25,15 +25,8 @@ type result struct {
 func fetchItems(link string) []models.WFCDItem {
 	fetchTimer := time.Now()
 	log.Printf("fetching %s\n", link)
-	resp, err := http.Get(link)
-	if err != nil {
-		log.Println(err)
-		return nil
-	}
-	defer resp.Body.Close()
-
 	var items []models.WFCDItem
-	if err := json.NewDecoder(resp.Body).Decode(&items); err != nil {
+	if err := fetchJson(link, &items); err != nil {
 		log.Println(err)
 		return nil
 	}

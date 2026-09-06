@@ -1,5 +1,10 @@
 package models
 
+type OrderFilter struct {
+	Platinum int `json:"platinum"`
+	Quantity int `json:"quantity"`
+}
+
 type OrderResponse struct {
 	Data OrderData `json:"data"`
 }
