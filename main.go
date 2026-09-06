@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"warframe-checker/internal/config"
+	"warframe-checker/internal/handlers"
 )
 
 func main() {
@@ -14,10 +15,15 @@ func main() {
 	}
 
 	log.Println("Starting server on :8080")
-	cfg := config.Get("API_URL")
+	h := &handlers.Handler{API_URL: config.Get("API_URL")}
+	router := handlers.NewRouter(h)
+	srv := &http.Server{
+		Addr:    ":8080",
+		Handler: router,
+	}
 
-	log.Printf("URL: %s", cfg)
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	log.Printf("URL: %s", h.API_URL)
+	if err := srv.ListenAndServe(); err != nil {
 		log.Println("Server failed:", err)
 		os.Exit(1)
 	}
