@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	client "warframe-checker/internal/httpclient"
 	"warframe-checker/internal/models"
 )
 
@@ -16,7 +17,7 @@ func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var items models.OrderResponse
-	if err := fetchJson(url, &items); err != nil {
+	if err := client.FetchJson(url, &items); err != nil {
 		log.Println(err)
 		return
 	}

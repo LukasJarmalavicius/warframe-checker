@@ -1,5 +1,12 @@
 package models
 
+type TrimmedItem struct {
+	UniqueName string `json:"uniqueName"`
+	Name       string `json:"name"`
+	Category   string `json:"category"`
+	Vaulted    bool   `json:"vaulted"`
+}
+
 type WFCDItem struct {
 	UniqueName string              `json:"uniqueName"`
 	Name       string              `json:"name"`

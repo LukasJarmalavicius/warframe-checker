@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"net/url"
 	"strings"
 	"sync"
 	"time"
 
+	client "warframe-checker/internal/httpclient"
 	"warframe-checker/internal/models"
 )
 
@@ -41,12 +41,12 @@ func getVaultedStatus(h *Handler, itemName string) (bool, int) {
 		partName = strings.Title(words[len(words)-1])
 		parentName = strings.Join(words[:2], " ")
 	}
+
 	var item models.WFCDItem
-	queryURL := h.WFCD_API + "items/" + url.PathEscape(parentName) + "?only=vaulted,components"
-	if err := fetchJson(queryURL, &item); err != nil {
-		log.Println(err)
-		return false, 0
+	if data, ok := h.cache.Get(parentName); ok {
+		item = data
 	}
+
 	var ducatCount int
 	for _, component := range item.Components {
 		if component.Name == partName {
@@ -68,12 +68,11 @@ func getPrices(h *Handler, itemName string) []models.OrderFilter {
 		itemName += "_set"
 	}
 
-	if err := fetchJson(h.API_URL+"orders/item/"+itemName+"/top", &items); err != nil {
+	if err := client.FetchJson(h.API_URL+"orders/item/"+itemName+"/top", &items); err != nil {
 		log.Println(err)
 		return nil
 	}
 
-	
 	filter := make([]models.OrderFilter, 0, len(items.Data.Sell))
 	for _, item := range items.Data.Sell {
 		if item.User.Status != "ingame" {

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"warframe-checker/internal/cache"
 	"warframe-checker/internal/config"
 	"warframe-checker/internal/handlers"
 )
@@ -28,7 +29,12 @@ func main() {
 
 	log.Printf("--- Server starting (pid %d) ---\n", os.Getpid())
 	log.Println("Starting server on :8080")
-	h := &handlers.Handler{API_URL: config.Get("API_URL"), WFCD_JSON: config.Get("WFCD_JSON"), WFCD_API: config.Get("WFCD_API")}
+	cache := cache.NewCache()
+	if err := cache.Load(config.Get("WFCD_JSON")); err != nil {
+		log.Fatalf("failed to load cache: %v", err)
+	}
+
+	h := handlers.NewHandler(config.Get("API_URL"), config.Get("WFCD_API"), cache)
 	router := handlers.NewRouter(h)
 	srv := &http.Server{
 		Addr:    ":8080",
@@ -36,7 +42,6 @@ func main() {
 	}
 
 	log.Printf("URL: %s", h.API_URL)
-	log.Printf("WFCD_JSON: %s", h.WFCD_JSON)
 	log.Printf("WFCD_API: %s", h.WFCD_API)
 	if err := srv.ListenAndServe(); err != nil {
 		log.Println("Server failed:", err)
