@@ -18,5 +18,6 @@ type WFCDItem struct {
 
 type WFCDItemComponent struct {
 	Name   string `json:"name"`
+	Type   string `json:"type,omitempty"`
 	Ducats int    `json:"ducats"`
 }

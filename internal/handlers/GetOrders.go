@@ -24,13 +24,16 @@ func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
 
 	filter := make([]models.OrderFilter, 0, len(items.Data.Sell))
 	for _, item := range items.Data.Sell {
+		if item.User.Status != "ingame" {
+			continue
+		}
 		filter = append(filter, models.OrderFilter{
 			Platinum: item.Platinum,
 			Quantity: item.Quantity,
 		})
 	}
 
-	log.Printf("/price: returned %d orders\n", len(items.Data.Sell))
+	log.Printf("/orders: returned %d orders\n", len(filter))
 
 	if err := json.NewEncoder(w).Encode(filter); err != nil {
 		log.Println(err)

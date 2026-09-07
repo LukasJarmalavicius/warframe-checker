@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -16,19 +17,30 @@ type InventoryRequest struct {
 	Items []models.InventoryItem `json:"items"`
 }
 
-type InventoryItemResponse struct {
-	Name          string               `json:"name"`
-	IsVaulted     bool                 `json:"isVaulted"`
-	Ducats        int                  `json:"ducats"`
+type InventoryItemStatus struct {
+	IsVaulted     bool
+	Ducats        int
 	CheapestPrice int                  `json:"cheapestPrice"`
 	OtherPrices   []models.OrderFilter `json:"otherPrices"`
 }
 
-type InventoryResponse struct {
-	Items []InventoryItemResponse `json:"items"`
+type InventoryItemMissing struct {
+	Set          string   `json:"set"`
+	Missing      []string `json:"missing"`
+	MissingCount int      `json:"missingCount"`
 }
 
-func getVaultedStatus(h *Handler, itemName string) (bool, int) {
+type InventoryItemResponse struct {
+	Name   string              `json:"name"`
+	Status InventoryItemStatus `json:"status"`
+}
+
+type InventoryResponse struct {
+	Items   []InventoryItemResponse `json:"items"`
+	Missing []InventoryItemMissing  `json:"missing"`
+}
+
+func getVaulted(h *Handler, itemName string) (bool, int) {
 	lower := strings.ReplaceAll(strings.ToLower(itemName), "_", " ")
 	if !strings.Contains(lower, "prime") {
 		return false, 0
@@ -47,13 +59,19 @@ func getVaultedStatus(h *Handler, itemName string) (bool, int) {
 		item = data
 	}
 
+	isWhole := partName == "" || strings.EqualFold(partName, "set")
+
 	var ducatCount int
-	for _, component := range item.Components {
-		if component.Name == partName {
-			log.Println(component)
-			ducatCount = component.Ducats
-		} else {
+	if isWhole {
+		for _, component := range item.Components {
 			ducatCount += component.Ducats
+		}
+	} else {
+		for _, component := range item.Components {
+			if strings.EqualFold(component.Name, partName) {
+				ducatCount = component.Ducats
+				break
+			}
 		}
 	}
 	return item.Vaulted, ducatCount
@@ -86,6 +104,51 @@ func getPrices(h *Handler, itemName string) []models.OrderFilter {
 	return filter
 }
 
+func getStatus(h *Handler, req models.InventoryItem) InventoryItemStatus {
+	var price []models.OrderFilter
+	var isVaulted bool
+	var ducats int
+	var wg sync.WaitGroup
+
+	wg.Go(func() {
+		price = getPrices(h, req.Name)
+	})
+	wg.Go(func() {
+		isVaulted, ducats = getVaulted(h, req.Name)
+	})
+	wg.Wait()
+
+	if price == nil {
+		return InventoryItemStatus{}
+	}
+
+	return InventoryItemStatus{
+		IsVaulted:     isVaulted,
+		Ducats:        ducats,
+		CheapestPrice: price[0].Platinum,
+		OtherPrices:   price[1:],
+	}
+}
+
+func getMissing(h *Handler, req InventoryRequest, maxMissing int) []InventoryItemMissing {
+	names := make([]string, 0, len(req.Items))
+	for _, item := range req.Items {
+		names = append(names, item.Name)
+	}
+
+	var missing []InventoryItemMissing
+
+	sets := h.cache.AlmostCompleteSets(names, maxMissing)
+	for _, set := range sets {
+		missing = append(missing, InventoryItemMissing{
+			Set:          set.SetName,
+			Missing:      set.Missing,
+			MissingCount: set.MissingCount,
+		})
+	}
+	return missing
+}
+
 func (h *Handler) PostInventory(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	log.Println("/inventory")
@@ -100,36 +163,28 @@ func (h *Handler) PostInventory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	maxMissingStr := r.URL.Query().Get("maxMissing")
+	maxMissing := 1
+	if maxMissingStr != "" {
+		parsed, err := strconv.Atoi(maxMissingStr)
+		if err != nil {
+			http.Error(w, "maxMissing must be a number", http.StatusBadRequest)
+			return
+		}
+		maxMissing = parsed
+	}
+
+	missing := getMissing(h, req, maxMissing)
+
 	results := make(chan InventoryItemResponse, len(req.Items))
 	var wg sync.WaitGroup
 
-	log.Printf("PostInventory called with %d items\n", len(req.Items))
 	for _, item := range req.Items {
 		wg.Go(func() {
-			var price []models.OrderFilter
-			var isVaulted bool
-			var ducats int
-
-			innerWg := sync.WaitGroup{}
-			innerWg.Go(func() {
-				price = getPrices(h, item.Name)
-			})
-			innerWg.Go(func() {
-				isVaulted, ducats = getVaultedStatus(h, item.Name)
-			})
-
-			innerWg.Wait()
-
-			if price == nil {
-				return
-			}
-
+			status := getStatus(h, item)
 			results <- InventoryItemResponse{
-				Name:          item.Name,
-				IsVaulted:     isVaulted,
-				CheapestPrice: price[0].Platinum,
-				Ducats:        ducats,
-				OtherPrices:   price[1:],
+				Name:   item.Name,
+				Status: status,
 			}
 		})
 	}
@@ -139,13 +194,13 @@ func (h *Handler) PostInventory(w http.ResponseWriter, r *http.Request) {
 		close(results)
 	}()
 
-	var responses []InventoryItemResponse
-	for r := range results {
-		responses = append(responses, r)
+	responses := []InventoryItemResponse{}
+	for result := range results {
+		responses = append(responses, result)
 	}
 
 	log.Printf("/inventory took %dms\n", time.Since(start).Milliseconds())
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(InventoryResponse{Items: responses})
+	json.NewEncoder(w).Encode(InventoryResponse{Items: responses, Missing: missing})
 }

@@ -2,6 +2,7 @@ package cache
 
 import (
 	"log"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -108,4 +109,58 @@ func (c *Cache) Unvaulted() []models.TrimmedItem {
 	}
 	log.Printf("cache: Unvaulted took %s", time.Since(start))
 	return items
+}
+
+type PartialSet struct {
+	SetName      string   `json:"setName"`
+	Owned        []string `json:"owned"`
+	Missing      []string `json:"missing"`
+	TotalParts   int      `json:"totalParts"`
+	MissingCount int      `json:"missingCount"`
+}
+
+func (c *Cache) AlmostCompleteSets(owned []string, maxMissing int) []PartialSet {
+	start := time.Now()
+	ownedSet := make(map[string]bool, len(owned))
+	for _, item := range owned {
+		ownedSet[strings.ToLower(strings.TrimSpace(item))] = true
+	}
+
+	var result []PartialSet
+	for _, item := range c.All() {
+		if !item.IsPrime || len(item.Components) == 0 {
+			continue
+		}
+
+		var have, missing []string
+
+		for _, component := range item.Components {
+			if component.Type == "Resource" {
+				continue
+			}
+			fullName := item.Name + " " + component.Name
+			if ownedSet[strings.ToLower(fullName)] {
+				have = append(have, fullName)
+			} else {
+				missing = append(missing, fullName)
+			}
+		}
+
+		if len(have) > 0 && len(missing) > 0 && len(missing) <= maxMissing {
+			result = append(result, PartialSet{
+				SetName:      item.Name,
+				Owned:        have,
+				Missing:      missing,
+				TotalParts:   len(item.Components),
+				MissingCount: len(missing),
+			})
+		}
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].MissingCount < result[j].MissingCount
+	})
+
+	log.Printf("cache: AlmostCompleteSets took %s", time.Since(start))
+	return result
 }
