@@ -17,32 +17,46 @@ type InventoryRequest struct {
 }
 
 type InventoryItemResponse struct {
-	Name      string               `json:"name"`
-	IsVaulted bool                 `json:"isVaulted"`
-	Prices    []models.OrderFilter `json:"prices"`
+	Name          string               `json:"name"`
+	IsVaulted     bool                 `json:"isVaulted"`
+	Ducats        int                  `json:"ducats"`
+	CheapestPrice int                  `json:"cheapestPrice"`
+	OtherPrices   []models.OrderFilter `json:"otherPrices"`
 }
 
 type InventoryResponse struct {
 	Items []InventoryItemResponse `json:"items"`
 }
 
-func getVaultedStatus(h *Handler, itemName string) bool {
+func getVaultedStatus(h *Handler, itemName string) (bool, int) {
 	lower := strings.ReplaceAll(strings.ToLower(itemName), "_", " ")
 	if !strings.Contains(lower, "prime") {
-		return false
+		return false, 0
 	}
+
 	parentName := lower
+	partName := lower
 	words := strings.Fields(lower)
 	if len(words) > 2 {
+		partName = strings.Title(words[len(words)-1])
 		parentName = strings.Join(words[:2], " ")
 	}
 	var item models.WFCDItem
-	queryURL := h.WFCD_API + "items/" + url.PathEscape(parentName) + "?only=vaulted"
+	queryURL := h.WFCD_API + "items/" + url.PathEscape(parentName) + "?only=vaulted,components"
 	if err := fetchJson(queryURL, &item); err != nil {
 		log.Println(err)
-		return false
+		return false, 0
 	}
-	return item.Vaulted
+	var ducatCount int
+	for _, component := range item.Components {
+		if component.Name == partName {
+			log.Println(component)
+			ducatCount = component.Ducats
+		} else {
+			ducatCount += component.Ducats
+		}
+	}
+	return item.Vaulted, ducatCount
 }
 
 func getPrices(h *Handler, itemName string) []models.OrderFilter {
@@ -50,13 +64,21 @@ func getPrices(h *Handler, itemName string) []models.OrderFilter {
 	itemName = strings.ToLower(itemName)
 	itemName = strings.ReplaceAll(itemName, " ", "_")
 
+	if strings.HasSuffix(itemName, "prime") {
+		itemName += "_set"
+	}
+
 	if err := fetchJson(h.API_URL+"orders/item/"+itemName+"/top", &items); err != nil {
 		log.Println(err)
 		return nil
 	}
 
+	
 	filter := make([]models.OrderFilter, 0, len(items.Data.Sell))
 	for _, item := range items.Data.Sell {
+		if item.User.Status != "ingame" {
+			continue
+		}
 		filter = append(filter, models.OrderFilter{
 			Platinum: item.Platinum,
 			Quantity: item.Quantity,
@@ -87,14 +109,16 @@ func (h *Handler) PostInventory(w http.ResponseWriter, r *http.Request) {
 		wg.Go(func() {
 			var price []models.OrderFilter
 			var isVaulted bool
+			var ducats int
 
 			innerWg := sync.WaitGroup{}
 			innerWg.Go(func() {
 				price = getPrices(h, item.Name)
 			})
 			innerWg.Go(func() {
-				isVaulted = getVaultedStatus(h, item.Name)
+				isVaulted, ducats = getVaultedStatus(h, item.Name)
 			})
+
 			innerWg.Wait()
 
 			if price == nil {
@@ -102,9 +126,11 @@ func (h *Handler) PostInventory(w http.ResponseWriter, r *http.Request) {
 			}
 
 			results <- InventoryItemResponse{
-				Name:      item.Name,
-				IsVaulted: isVaulted,
-				Prices:    price,
+				Name:          item.Name,
+				IsVaulted:     isVaulted,
+				CheapestPrice: price[0].Platinum,
+				Ducats:        ducats,
+				OtherPrices:   price[1:],
 			}
 		})
 	}

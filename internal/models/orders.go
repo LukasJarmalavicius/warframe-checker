@@ -15,8 +15,13 @@ type OrderData struct {
 }
 
 type Order struct {
-	ID       string `json:"id"`
-	Type     string `json:"type"`
-	Platinum int    `json:"platinum"`
-	Quantity int    `json:"quantity"`
+	ID       string    `json:"id"`
+	Type     string    `json:"type"`
+	Platinum int       `json:"platinum"`
+	Quantity int       `json:"quantity"`
+	User     UserShort `json:"user"`
+}
+
+type UserShort struct {
+	Status string `json:"status"`
 }
