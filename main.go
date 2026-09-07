@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -10,10 +11,22 @@ import (
 )
 
 func main() {
+	logFile, err := os.OpenFile("server.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatal("failed to open log file:", err)
+	}
+	defer logFile.Close()
+
+	multiWriter := io.MultiWriter(os.Stdout, logFile)
+	log.SetOutput(multiWriter)
+
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	if err := config.Load(); err != nil {
 		log.Fatalf("failed to load .env: %v", err)
 	}
 
+	log.Printf("--- Server starting (pid %d) ---\n", os.Getpid())
 	log.Println("Starting server on :8080")
 	h := &handlers.Handler{API_URL: config.Get("API_URL"), WFCD_JSON: config.Get("WFCD_JSON"), WFCD_API: config.Get("WFCD_API")}
 	router := handlers.NewRouter(h)

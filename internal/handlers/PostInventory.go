@@ -67,7 +67,7 @@ func getPrices(h *Handler, itemName string) []models.OrderFilter {
 
 func (h *Handler) PostInventory(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
-	log.Println("PostInventory")
+	log.Println("/inventory")
 	var req InventoryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -119,7 +119,7 @@ func (h *Handler) PostInventory(w http.ResponseWriter, r *http.Request) {
 		responses = append(responses, r)
 	}
 
-	log.Printf("PostInventory took %v\n", time.Since(start))
+	log.Printf("/inventory took %dms\n", time.Since(start).Milliseconds())
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(InventoryResponse{Items: responses})

@@ -3,7 +3,9 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"time"
 )
 
 type Handler struct {
@@ -13,6 +15,8 @@ type Handler struct {
 }
 
 func fetchJson(url string, target any) error {
+	start := time.Now()
+	log.Printf("fetching %s", url)
 	resp, err := http.Get(url)
 	if err != nil {
 		return fmt.Errorf("fetching %s: %w", url, err)
@@ -26,5 +30,6 @@ func fetchJson(url string, target any) error {
 	if err = json.NewDecoder(resp.Body).Decode(target); err != nil {
 		return fmt.Errorf("decoding %s: %w", url, err)
 	}
+	log.Printf("fetching took %dms", time.Since(start).Milliseconds())
 	return nil
 }
