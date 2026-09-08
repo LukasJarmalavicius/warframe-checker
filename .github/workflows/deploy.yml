@@ -26,6 +26,8 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
 
           ssh -i ~/.ssh/deploy_key \
+            -o BatchMode=yes \
+            -o ConnectTimeout=10 \
             -o StrictHostKeyChecking=accept-new \
             "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" \
             "${{ secrets.DEPLOY_PATH }}"
