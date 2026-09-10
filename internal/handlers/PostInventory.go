@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	client "warframe-checker/internal/httpclient"
 	"warframe-checker/internal/models"
@@ -37,7 +36,7 @@ type InventoryItemResponse struct {
 
 type InventoryResponse struct {
 	Items   []InventoryItemResponse `json:"items"`
-	Missing []InventoryItemMissing  `json:"missing"`
+	Missing []InventoryItemMissing  `json:"missing, omitempty"`
 }
 
 func getVaulted(h *Handler, itemName string) (bool, int) {
@@ -150,7 +149,6 @@ func getMissing(h *Handler, req InventoryRequest, maxMissing int) []InventoryIte
 }
 
 func (h *Handler) PostInventory(w http.ResponseWriter, r *http.Request) {
-	start := time.Now()
 	log.Println("/inventory")
 	var req InventoryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -176,6 +174,17 @@ func (h *Handler) PostInventory(w http.ResponseWriter, r *http.Request) {
 
 	missing := getMissing(h, req, maxMissing)
 
+	w.Header().Set("Content-Type", "application/x-ndjson")
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "streaming not supported", http.StatusInternalServerError)
+		return
+	}
+
+	encoder := json.NewEncoder(w)
+	encoder.Encode(map[string]any{"missing": missing})
+	flusher.Flush()
+
 	results := make(chan InventoryItemResponse, len(req.Items))
 	var wg sync.WaitGroup
 
@@ -194,13 +203,9 @@ func (h *Handler) PostInventory(w http.ResponseWriter, r *http.Request) {
 		close(results)
 	}()
 
-	responses := []InventoryItemResponse{}
 	for result := range results {
-		responses = append(responses, result)
+		encoder.Encode(map[string]any{"item": result})
+		flusher.Flush()
 	}
 
-	log.Printf("/inventory took %dms\n", time.Since(start).Milliseconds())
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(InventoryResponse{Items: responses, Missing: missing})
 }
