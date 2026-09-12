@@ -91,26 +91,6 @@ func (c *Cache) All() []models.WFCDItem {
 	return items
 }
 
-func (c *Cache) Unvaulted() []models.TrimmedItem {
-	start := time.Now()
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	items := make([]models.TrimmedItem, 0, len(c.data))
-	for _, item := range c.data {
-		if item.Vaulted || !item.IsPrime {
-			continue
-		}
-		items = append(items, models.TrimmedItem{
-			UniqueName: item.UniqueName,
-			Name:       item.Name,
-			Category:   item.Category,
-			Vaulted:    item.Vaulted,
-		})
-	}
-	log.Printf("cache: Unvaulted took %s", time.Since(start))
-	return items
-}
-
 type PartialSet struct {
 	SetName      string   `json:"setName"`
 	Owned        []string `json:"owned"`

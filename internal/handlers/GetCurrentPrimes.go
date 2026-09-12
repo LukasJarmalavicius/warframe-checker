@@ -16,11 +16,11 @@ type UnvaultedResponse struct {
 	Secondary []models.TrimmedItem
 }
 
-func (h *Handler) GetUnvaulted(w http.ResponseWriter, r *http.Request) {
-	log.Println("/unvaulted")
+func (h *Handler) GetCurrentPrimes(w http.ResponseWriter, r *http.Request) {
+	log.Println("/currentPrimes")
 
 	start := time.Now()
-	items := h.cache.Unvaulted()
+	items := h.inventoryService.GetCurrentPrimes()
 
 	var unvaulted UnvaultedResponse
 	for _, item := range items {
@@ -36,8 +36,8 @@ func (h *Handler) GetUnvaulted(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	log.Printf("/unvaulted: returned %d items\n", len(unvaulted.Warframes)+len(unvaulted.Melee)+len(unvaulted.Primary)+len(unvaulted.Secondary))
-	log.Printf("cache: GetUnvaulted took %s", time.Since(start))
+	log.Printf("/currentPrimes: returned %d items\n", len(unvaulted.Warframes)+len(unvaulted.Melee)+len(unvaulted.Primary)+len(unvaulted.Secondary))
+	log.Printf("cache: GetCurrentPrimes took %s", time.Since(start))
 
 	if err := json.NewEncoder(w).Encode(unvaulted); err != nil {
 		log.Println(err)
