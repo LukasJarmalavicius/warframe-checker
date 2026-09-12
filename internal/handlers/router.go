@@ -9,6 +9,7 @@ func NewRouter(h *Handler) *http.ServeMux {
 	mux.HandleFunc("GET /items", h.GetItems)
 	mux.HandleFunc("GET /orders", h.GetOrders)
 	mux.HandleFunc("GET /currentPrimes", h.GetCurrentPrimes)
+	mux.HandleFunc("POST /missing", h.PostMissing)
 
 	mux.HandleFunc("POST /inventory", h.PostInventory)
 

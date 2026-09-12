@@ -5,15 +5,13 @@ import (
 	"log"
 	"net/http"
 	"time"
-
-	"warframe-checker/internal/models"
 )
 
 type UnvaultedResponse struct {
-	Warframes []models.TrimmedItem
-	Melee     []models.TrimmedItem
-	Primary   []models.TrimmedItem
-	Secondary []models.TrimmedItem
+	Warframes []string
+	Primary   []string
+	Secondary []string
+	Melee     []string
 }
 
 func (h *Handler) GetCurrentPrimes(w http.ResponseWriter, r *http.Request) {
@@ -26,17 +24,17 @@ func (h *Handler) GetCurrentPrimes(w http.ResponseWriter, r *http.Request) {
 	for _, item := range items {
 		switch item.Category {
 		case "Warframes":
-			unvaulted.Warframes = append(unvaulted.Warframes, models.TrimmedItem(item))
+			unvaulted.Warframes = append(unvaulted.Warframes, item.Name)
 		case "Melee":
-			unvaulted.Melee = append(unvaulted.Melee, models.TrimmedItem(item))
+			unvaulted.Melee = append(unvaulted.Melee, item.Name)
 		case "Primary":
-			unvaulted.Primary = append(unvaulted.Primary, models.TrimmedItem(item))
+			unvaulted.Primary = append(unvaulted.Primary, item.Name)
 		case "Secondary":
-			unvaulted.Secondary = append(unvaulted.Secondary, models.TrimmedItem(item))
+			unvaulted.Secondary = append(unvaulted.Secondary, item.Name)
 		}
 	}
 
-	log.Printf("/currentPrimes: returned %d items\n", len(unvaulted.Warframes)+len(unvaulted.Melee)+len(unvaulted.Primary)+len(unvaulted.Secondary))
+	log.Printf("/currentPrimes: returned %d items\n", len(items))
 	log.Printf("cache: GetCurrentPrimes took %s", time.Since(start))
 
 	if err := json.NewEncoder(w).Encode(unvaulted); err != nil {
