@@ -39,6 +39,27 @@ func (s *InventoryService) GetCurrentPrimes() []models.TrimmedItem {
 		})
 	}
 
+	resurgenceItems := models.VaultTrader{}
+	if err := s.client.FetchJson("https://api.warframestat.us/pc/vaultTrader", &resurgenceItems); err != nil {
+		return items
+	}
+	schedule := resurgenceItems.Schedule[len(resurgenceItems.Schedule)-2]
+	words := strings.Fields(schedule.Item)
+
+	frame1 := words[3] + " " + words[5]
+	frame2 := words[4] + " " + words[5]
+	
+	items = append(items, models.TrimmedItem{
+		Name:     frame1,
+		Category: "Resurgence Frame",
+		Vaulted:  false,
+	})
+	items = append(items, models.TrimmedItem{
+		Name:     frame2,
+		Category: "Resurgence Frame",
+		Vaulted:  false,
+	})
+
 	log.Printf("cache: InventoryService.GetCurrentPrimes took %s returned %d items", time.Since(start), len(items))
 	return items
 }

@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type TrimmedItem struct {
 	Name     string `json:"name"`
 	Category string `json:"category"`
@@ -18,4 +20,14 @@ type WFCDItemComponent struct {
 	Name   string `json:"name"`
 	Type   string `json:"type,omitempty"`
 	Ducats int    `json:"ducats"`
+}
+
+type VaultTrader struct {
+	Schedule []VaultTraderItem `json:"schedule"`
+}
+
+type VaultTraderItem struct {
+	Expiry     time.Time `json:"expiry"`
+	Item       string    `json:"item"`
+	UniqueName string    `json:"uniqueName"`
 }

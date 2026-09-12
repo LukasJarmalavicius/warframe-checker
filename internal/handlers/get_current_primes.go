@@ -31,6 +31,8 @@ func (h *Handler) GetCurrentPrimes(w http.ResponseWriter, r *http.Request) {
 			unvaulted.Primary = append(unvaulted.Primary, item.Name)
 		case "Secondary":
 			unvaulted.Secondary = append(unvaulted.Secondary, item.Name)
+		case "Resurgence Frame":
+			unvaulted.Warframes = append(unvaulted.Warframes, item.Name)
 		}
 	}
 
