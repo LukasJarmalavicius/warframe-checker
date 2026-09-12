@@ -22,7 +22,7 @@ func NewInventoryService(cache *cache.Cache, client *httpclient.Client, marketAP
 	}
 }
 
-func (s *InventoryService) GetUnvaulted() []models.TrimmedItem {
+func (s *InventoryService) GetCurrentPrimes() []models.TrimmedItem {
 	start := time.Now()
 	data := s.cache.All()
 	items := make([]models.TrimmedItem, 0, len(data))
@@ -37,6 +37,6 @@ func (s *InventoryService) GetUnvaulted() []models.TrimmedItem {
 			Vaulted:    item.Vaulted,
 		})
 	}
-	log.Printf("cache: Unvaulted took %s returned %d items", time.Since(start), len(items))
+	log.Printf("cache: GetCurrentPrimes took %s returned %d items", time.Since(start), len(items))
 	return items
 }

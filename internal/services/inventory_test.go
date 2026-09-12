@@ -20,7 +20,7 @@ func newTestClient() *httpclient.Client {
 	return httpclient.NewDefaultClient()
 }
 
-func TestInventoryService_GetUnvaulted(t *testing.T) {
+func TestInventoryService_GetCurrentPrimes(t *testing.T) {
 	c := newTestCache(models.WFCDItem{
 		Name:    "Rhino Prime",
 		Vaulted: true,
@@ -36,7 +36,7 @@ func TestInventoryService_GetUnvaulted(t *testing.T) {
 	})
 
 	svc := NewInventoryService(c, newTestClient(), "")
-	vaulted := svc.GetUnvaulted()
+	vaulted := svc.GetCurrentPrimes()
 	if len(vaulted) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(vaulted))
 	}
