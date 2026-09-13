@@ -12,10 +12,10 @@ button.addEventListener("click", async () => {
         json = JSON.stringify({ items });
     }
     else {
-        json = JSON.parse(inventory);
+        json = inventory;
     }
     try {
-        test.textContent = json;
+        test.textContent = (check.checked ? "json\n" : "nojson\n") + json;
         button.disabled = true;
         button.textContent = "Loading...";
         result.textContent = "Loading...";
