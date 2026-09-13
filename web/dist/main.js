@@ -2,10 +2,20 @@
 const input = document.getElementById("inventoryInput");
 const button = document.getElementById("submitButton");
 const result = document.getElementById("result");
+const test = document.getElementById("test");
+const check = document.getElementById("jsonCheck");
 button.addEventListener("click", async () => {
     const inventory = input.value.trim();
+    let json = "";
+    if (!check.checked) {
+        const items = inventory.split("\n").map(line => line.trim()).filter(line => line.length > 0).map(name => ({ name, quantity: 1 }));
+        json = JSON.stringify({ items });
+    }
+    else {
+        json = JSON.parse(inventory);
+    }
     try {
-        JSON.parse(inventory);
+        test.textContent = json;
         button.disabled = true;
         button.textContent = "Loading...";
         result.textContent = "Loading...";
@@ -14,7 +24,7 @@ button.addEventListener("click", async () => {
             headers: {
                 "Content-Type": "application/json"
             },
-            body: inventory
+            body: json
         });
         const text = await response.text();
         const lines = text
