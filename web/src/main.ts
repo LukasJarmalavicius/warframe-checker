@@ -1,5 +1,3 @@
-export {}
-
 const input = document.getElementById("inventoryInput") as HTMLTextAreaElement;
 const button = document.getElementById("submitButton") as HTMLButtonElement;
 const result = document.getElementById("result") as HTMLPreElement;
@@ -9,10 +7,12 @@ const check = document.getElementById("jsonCheck") as HTMLInputElement;
 button.addEventListener("click", async () => {
   const inventory = input.value.trim()
 
-  let json = inventory
+  let json
   if (!check.checked) {
     const items = inventory.split("\n").map(line => line.trim()).filter(line => line.length > 0).map(name => ({ name, quantity: 1 }))
     json = JSON.stringify({ items })
+  } else {
+    json = inventory
   }
 
   try {

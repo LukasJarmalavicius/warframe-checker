@@ -6,7 +6,7 @@ const test = document.getElementById("test");
 const check = document.getElementById("jsonCheck");
 button.addEventListener("click", async () => {
     const inventory = input.value.trim();
-    let json = "";
+    let json;
     if (!check.checked) {
         const items = inventory.split("\n").map(line => line.trim()).filter(line => line.length > 0).map(name => ({ name, quantity: 1 }));
         json = JSON.stringify({ items });
