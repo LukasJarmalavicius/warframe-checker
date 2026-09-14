@@ -9,6 +9,8 @@ import (
 	"warframe-checker/internal/cache"
 	"warframe-checker/internal/config"
 	"warframe-checker/internal/handlers"
+	"warframe-checker/internal/httpclient"
+	"warframe-checker/internal/services"
 )
 
 func main() {
@@ -34,7 +36,9 @@ func main() {
 		log.Fatalf("failed to load cache: %v", err)
 	}
 
-	h := handlers.NewHandler(config.Get("API_URL"), config.Get("WFCD_API"), cache)
+	client := httpclient.NewDefaultClient()
+	inventoryService := services.NewInventoryService(cache, client, config.Get("API_URL"))
+	h := handlers.NewHandler(config.Get("API_URL"), config.Get("WFCD_API"), cache, inventoryService)
 	router := handlers.NewRouter(h)
 	srv := &http.Server{
 		Addr:    ":8080",
