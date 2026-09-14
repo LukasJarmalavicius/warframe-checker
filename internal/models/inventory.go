@@ -11,3 +11,9 @@ type PartialSet struct {
 	MissingParts []string `json:"missingParts"`
 	MissingCount int      `json:"missingCount"`
 }
+
+type InventoryResponse struct {
+	Name    string `json:"name"`
+	Vaulted bool   `json:"vaulted"`
+	Ducats  int    `json:"ducats"`
+}

@@ -37,8 +37,8 @@ func TestInventoryService_GetCurrentPrimes(t *testing.T) {
 
 	svc := NewInventoryService(c, newTestClient(), "")
 	vaulted := svc.GetCurrentPrimes()
-	if len(vaulted) != 1 {
-		t.Fatalf("expected 1 item, got %d", len(vaulted))
+	if len(vaulted) != 3 {
+		t.Fatalf("expected 3 items, got %d", len(vaulted))
 	}
 	if vaulted[0].Vaulted {
 		t.Error("expected unvaulted item")
@@ -57,6 +57,7 @@ func TestInventoryService_GetMissing(t *testing.T) {
 			{Name: "Neuroptics"},
 			{Name: "Resource", Type: "Resource"},
 		},
+		IsPrime: true,
 	}, models.WFCDItem{
 		Name: "Nekros",
 		Components: []models.WFCDItemComponent{
@@ -65,10 +66,13 @@ func TestInventoryService_GetMissing(t *testing.T) {
 	})
 
 	svc := NewInventoryService(c, newTestClient(), "")
-	result := svc.GetMissing([]models.InventoryItem{
+
+	items := []models.InventoryItem{
 		{Name: "Rhino Prime Blueprint", Quantity: 1},
 		{Name: "Nekros Blueprint", Quantity: 1},
-	})
+	}
+
+	result := svc.GetMissing(items)
 
 	if len(result) != 1 {
 		t.Fatalf("expected 1 partial set, got %d", len(result))
@@ -86,27 +90,52 @@ func TestInventoryService_GetMissing(t *testing.T) {
 	}
 	for _, part := range set.MissingParts {
 		if part == "Blueprint" {
-			t.Error("blueprint should not be missing")
+			t.Errorf("blueprint should not be missing")
 		}
 	}
 }
 
-func TestInventoryService_GetMissing_NoInventory(t *testing.T) {
+func TestInventoryService_GetVaultedStatus(t *testing.T) {
 	c := newTestCache(models.WFCDItem{
-		Name: "Rhino Prime",
-		Components: []models.WFCDItemComponent{
-			{Name: "Blueprint"},
-			{Name: "Chassis"},
-		},
+		Name:    "Rhino Prime",
+		Vaulted: true,
+		IsPrime: true,
+	}, models.WFCDItem{
+		Name:    "Caliban Prime",
+		Vaulted: false,
+		IsPrime: true,
+	}, models.WFCDItem{
+		Name:    "Nekros",
+		Vaulted: false,
+		IsPrime: false,
 	})
 
-	svc := NewInventoryService(c, newTestClient(), "")
-	result := svc.GetMissing(nil)
-
-	if len(result) != 1 {
-		t.Fatalf("expected 1 partial set, got %d", len(result))
+	tests := []struct {
+		name           string
+		input          string
+		expectedBool   bool
+		expectedDucats int
+		wantErr        bool
+	}{
+		{"Rhino", "Rhino prime blueprint", true, 100, false},
+		{"Caliban", "caliban prime chassis", false, 15, false},
+		{"Nekros", "nekros systems", false, 0, true},
 	}
-	if result[0].MissingCount != 2 {
-		t.Errorf("expected 2 missing parts, got %d", result[0].MissingCount)
+
+	svc := NewInventoryService(c, newTestClient(), "")
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, ducats, err := svc.GetVaultedStatus(tt.input)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetVaultedStatus(%s) error = %v, wantErr %v", tt.input, err, tt.wantErr)
+				return
+			}
+
+			if result != tt.expectedBool || ducats != tt.expectedDucats {
+				t.Errorf("GetVaultedStatus(%s) = %v and %d ducats; want %v and %d ducats", tt.input, result, ducats, tt.expectedBool, tt.expectedDucats)
+			}
+		})
 	}
 }
