@@ -11,20 +11,37 @@ import (
 	"golang.org/x/time/rate"
 )
 
-var limiter = rate.NewLimiter(rate.Limit(3), 1)
+type Client struct {
+	limiter    *rate.Limiter
+	httpClient *http.Client
+}
 
-var httpClient = &http.Client{
-	Timeout: 10 * time.Second,
+func NewClient(limiter *rate.Limiter, httpClient *http.Client) *Client {
+	return &Client{
+		limiter:    limiter,
+		httpClient: httpClient,
+	}
+}
+
+func NewDefaultClient() *Client {
+	return NewClient(rate.NewLimiter(rate.Limit(3), 1), &http.Client{
+		Timeout: 10 * time.Second,
+	})
 }
 
 func FetchJson(url string, target any) error {
-	if err := limiter.Wait(context.Background()); err != nil {
+	client := NewDefaultClient()
+	return client.FetchJson(url, target)
+}
+
+func (c *Client) FetchJson(url string, target any) error {
+	if err := c.limiter.Wait(context.Background()); err != nil {
 		return fmt.Errorf("fetching %s: %w", url, err)
 	}
 
 	start := time.Now()
 	log.Printf("fetching %s\n", url)
-	resp, err := httpClient.Get(url)
+	resp, err := c.httpClient.Get(url)
 	if err != nil {
 		return fmt.Errorf("fetching %s: %w", url, err)
 	}
