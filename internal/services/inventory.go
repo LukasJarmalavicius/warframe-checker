@@ -69,13 +69,18 @@ func (s *InventoryService) GetCurrentPrimes() []models.TrimmedItem {
 func (s *InventoryService) GetMissing(inventory []models.InventoryItem) []models.PartialSet {
 	start := time.Now()
 	data := s.cache.All()
-	trimedInventory := make([]string, 0, len(inventory))
+	trimmedInventory := make([]string, 0, len(inventory))
 	for _, item := range inventory {
-		trimedInventory = append(trimedInventory, strings.ToLower(strings.TrimSpace(item.Name)))
+		trimmedItem := strings.ToLower(item.Name)
+		words := strings.Fields(trimmedItem)
+		if len(words) > 2 && words[2] != "blueprint" {
+			trimmedItem = strings.TrimSpace(strings.ReplaceAll(strings.ToLower(item.Name), " blueprint", ""))
+		}
+		trimmedInventory = append(trimmedInventory, trimmedItem)
 	}
 
-	ownedSets := make(map[string]bool, len(trimedInventory))
-	for _, item := range trimedInventory {
+	ownedSets := make(map[string]bool, len(trimmedInventory))
+	for _, item := range trimmedInventory {
 		ownedSets[item] = true
 	}
 
