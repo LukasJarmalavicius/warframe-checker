@@ -1,29 +1,50 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>warframe-checker</title>
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-    <h1>warframe-checker</h1>
+    <main class="page">
+        <header>
+            <p class="eyebrow">Field-certified</p>
+            <h1>warframe-checker</h1>
+            <p class="intro">Paste prime parts here.</p>
+        </header>
 
-    <textarea
-        id="inventoryInput"
-        rows="15"
-        cols="80"
-        placeholder="Paste inventory here"
-    ></textarea>
+        <section class="panel input-panel" aria-labelledby="input-title">
+            <h2 id="input-title">Your inventory</h2>
+            <label for="inventoryInput">One item per line</label>
+            <textarea id="inventoryInput" placeholder="Example:&#10;Volt Prime Blueprint&#10;Volt Prime Chassis&#10;Braton Prime Barrel"></textarea>
+            <div class="controls">
+                <button id="submitButton" type="button">Check inventory</button>
+                <label class="check-control" for="jsonCheck">
+                    <input type="checkbox" id="jsonCheck" name="jsonCheck">
+                    Paste JSON
+                </label>
+            </div>
+        </section>
 
-    <br>
+        <section class="results" aria-live="polite" aria-labelledby="results-title">
+            <div class="results-header">
+                <h2 id="results-title">Missing Prime parts</h2>
+                <span id="status" class="status">Waiting for an inventory check</span>
+            </div>
+            <div id="summary" class="summary" hidden></div>
+            <div id="result" class="empty">Results will appear here.</div>
+            <div id="itemResults" class="item-results" hidden>
+                <h2>Checked items</h2>
+                <div id="itemList"></div>
+            </div>
+        </section>
 
-    <button id="submitButton">Submit</button>
-    <input type="checkbox" id="jsonCheck" name="jsonCheck"/>
-        <label for="jsonCheck">jsonCheck</label>
-
-    <h2>Test</h2>
-    <pre id="test"></pre>
-    <h2>Result</h2>
-
-    <pre id="result"></pre>
+        <details>
+            <summary>Details</summary>
+            <pre id="test"></pre>
+        </details>
+    </main>
 
     <script src="/dist/main.js"></script>
 </body>
