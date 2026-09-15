@@ -55,7 +55,7 @@ function renderInventoryItems(items: InventoryResult[]) {
   itemList.innerHTML = items.map(item => `
     <div class="item-row">
       <span>${escapeHtml(item.name)}</span>
-      <span class="${item.vaulted ? "vaulted" : "available"}">${item.vaulted ? `Vaulted · ${item.ducats} ducats` : "Unvaulted"}</span>
+      <span class="${item.vaulted ? "vaulted" : "available"}">${item.vaulted ? `Vaulted · ${item.ducats} ducats` : `Unvaulted · ${item.ducats} ducats`}</span>
     </div>
   `).join("");
 }
