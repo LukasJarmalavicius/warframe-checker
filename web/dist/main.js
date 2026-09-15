@@ -4,7 +4,7 @@ const button = document.getElementById("submitButton");
 const result = document.getElementById("result");
 const test = document.getElementById("test");
 const check = document.getElementById("jsonCheck");
-const status = document.getElementById("status");
+const statusText = document.getElementById("status");
 const summary = document.getElementById("summary");
 const itemResults = document.getElementById("itemResults");
 const itemList = document.getElementById("itemList");
@@ -39,7 +39,7 @@ function renderInventoryItems(items) {
     itemList.innerHTML = items.map(item => `
     <div class="item-row">
       <span>${escapeHtml(item.name)}</span>
-      <span class="${item.vaulted ? "vaulted" : "available"}">${item.vaulted ? `Vaulted · ${item.ducats} ducats` : "Available"}</span>
+      <span class="${item.vaulted ? "vaulted" : "available"}">${item.vaulted ? `Vaulted · ${item.ducats} ducats` : "Unvaulted"}</span>
     </div>
   `).join("");
 }
@@ -62,7 +62,7 @@ button.addEventListener("click", async () => {
         test.textContent = (check.checked ? "json\n" : "nojson\n") + json;
         button.disabled = true;
         button.textContent = "Checking...";
-        status.textContent = "Checking inventory...";
+        statusText.textContent = "Checking inventory...";
         summary.hidden = true;
         itemResults.hidden = true;
         result.className = "empty";
@@ -84,14 +84,14 @@ button.addEventListener("click", async () => {
         const items = data.filter(entry => entry.item).map(entry => entry.item);
         renderMissingSets(missing);
         renderInventoryItems(items);
-        status.textContent = `${missing.length} incomplete set${missing.length === 1 ? "" : "s"} found`;
+        statusText.textContent = `${missing.length} incomplete set${missing.length === 1 ? "" : "s"} found`;
     }
     catch (error) {
         summary.hidden = true;
         itemResults.hidden = true;
         result.className = "error";
         result.textContent = String(error);
-        status.textContent = "The check could not be completed";
+        statusText.textContent = "The check could not be completed";
     }
     finally {
         button.disabled = false;
