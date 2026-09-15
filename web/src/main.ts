@@ -71,7 +71,14 @@ button.addEventListener("click", async () => {
 
   let json
   if (!check.checked) {
-    const items = inventory.split("\n").map(line => line.trim()).filter(line => line.length > 0).map(name => ({ name, quantity: 1 }))
+    const items = inventory.split("\n")
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+      .map(line => {
+        const [name, quantity] = line.split(",").map(item => item.trim())
+        const parsedQuantity = quantity ? parseInt(quantity, 10) : 1
+        return { name, quantity: parsedQuantity }
+      })
     json = JSON.stringify({ items })
   } else {
     json = inventory
