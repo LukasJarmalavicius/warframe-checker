@@ -11,9 +11,17 @@ import (
 	"warframe-checker/internal/handlers"
 	"warframe-checker/internal/httpclient"
 	"warframe-checker/internal/services"
+	"warframe-checker/internal/storage"
 )
 
 func main() {
+
+	db, err := storage.New("internal/storage/warframe-checker.sqlite")
+	if err != nil {
+		log.Fatal("failed to connect to database:", err)
+	}
+	defer db.Close()
+
 	logFile, err := os.OpenFile("server.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatal("failed to open log file:", err)
@@ -37,8 +45,10 @@ func main() {
 	}
 
 	client := httpclient.NewDefaultClient()
+	userService := services.NewUserService(db)
+	authService := services.NewAuthService(db, userService)
 	inventoryService := services.NewInventoryService(cache, client, config.Get("API_URL"))
-	h := handlers.NewHandler(config.Get("API_URL"), config.Get("WFCD_API"), cache, inventoryService)
+	h := handlers.NewHandler(config.Get("API_URL"), config.Get("WFCD_API"), cache, inventoryService, authService)
 	router := handlers.NewRouter(h)
 	srv := &http.Server{
 		Addr:    ":8080",

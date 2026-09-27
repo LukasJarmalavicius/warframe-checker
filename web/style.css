@@ -75,8 +75,28 @@ button {
 }
 button:hover { background: var(--accent-strong); }
 button:disabled { cursor: wait; opacity: 0.65; }
+button.secondary { background: transparent; color: var(--accent-strong); }
+button.secondary:hover { background: var(--panel-raised); }
 .check-control { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--muted); font-weight: 400; }
 .check-control input { accent-color: var(--accent); }
+
+.auth-panel { margin-top: 32px; padding: 20px 24px; }
+.auth-panel h2 { margin-bottom: 12px; }
+.auth-form { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.auth-form .controls { margin-top: 0; }
+.field label { margin-bottom: 6px; }
+.field input {
+    width: 220px;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: #101a29;
+    color: var(--text);
+    font: inherit;
+}
+.field input:focus { border-color: var(--accent); outline: 2px solid rgba(111, 177, 216, 0.2); }
+.auth-error { flex-basis: 100%; margin: 0; color: var(--danger); font-size: 0.9rem; }
+.auth-status { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 
 .results { margin-top: 40px; }
 .results-header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
@@ -105,6 +125,7 @@ pre { overflow-x: auto; padding: 16px; background: #101a29; border: 1px solid va
 
 @media (max-width: 600px) {
     .page { width: min(100% - 22px, 1080px); padding-top: 30px; }
-    .input-panel { padding: 16px; }
+    .input-panel, .auth-panel { padding: 16px; }
+    .field, .field input { width: 100%; }
     .results-header { display: block; }
 }

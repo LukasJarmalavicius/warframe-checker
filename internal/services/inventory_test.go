@@ -30,6 +30,14 @@ func TestInventoryService_GetCurrentPrimes(t *testing.T) {
 		Vaulted: false,
 		IsPrime: true,
 	}, models.WFCDItem{
+		Name:    "Styanax Prime",
+		Vaulted: false,
+		IsPrime: true,
+	}, models.WFCDItem{
+		Name:    "Gyre Prime",
+		Vaulted: false,
+		IsPrime: true,
+	}, models.WFCDItem{
 		Name:    "Nekros",
 		Vaulted: false,
 		IsPrime: false,
@@ -37,14 +45,20 @@ func TestInventoryService_GetCurrentPrimes(t *testing.T) {
 
 	svc := NewInventoryService(c, newTestClient(), "")
 	vaulted := svc.GetCurrentPrimes()
-	if len(vaulted) != 3 {
-		t.Fatalf("expected 3 items, got %d", len(vaulted))
+	if len(vaulted) != 5 {
+		t.Fatalf("expected 5 items, got %d", len(vaulted))
 	}
-	if vaulted[0].Vaulted {
-		t.Error("expected unvaulted item")
-	}
-	if vaulted[0].Name != "Caliban Prime" {
-		t.Errorf("expected Caliban Prime, got %s", vaulted[0].Name)
+	wantNames := map[string]bool{"Caliban Prime": true, "Styanax Prime": true, "Gyre Prime": true}
+	for _, item := range vaulted {
+		if item.Vaulted {
+			t.Errorf("expected unvaulted item, got vaulted: %s", item.Name)
+		}
+		if item.Category == "Resurgence Frame" {
+			continue
+		}
+		if !wantNames[item.Name] {
+			t.Errorf("unexpected item in result: %s", item.Name)
+		}
 	}
 }
 
@@ -100,10 +114,16 @@ func TestInventoryService_GetVaultedStatus(t *testing.T) {
 		Name:    "Rhino Prime",
 		Vaulted: true,
 		IsPrime: true,
+		Components: []models.WFCDItemComponent{
+			{Name: "Blueprint", Ducats: 100},
+		},
 	}, models.WFCDItem{
 		Name:    "Caliban Prime",
 		Vaulted: false,
 		IsPrime: true,
+		Components: []models.WFCDItemComponent{
+			{Name: "Chassis", Ducats: 15},
+		},
 	}, models.WFCDItem{
 		Name:    "Nekros",
 		Vaulted: false,

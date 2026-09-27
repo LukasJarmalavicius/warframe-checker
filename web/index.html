@@ -14,6 +14,29 @@
             <p class="intro">Paste prime parts here.</p>
         </header>
 
+        <section class="panel auth-panel" aria-labelledby="auth-title">
+            <h2 id="auth-title">Account</h2>
+            <form id="authForm" class="auth-form">
+                <div class="field">
+                    <label for="usernameInput">Username</label>
+                    <input id="usernameInput" name="username" autocomplete="username" required>
+                </div>
+                <div class="field">
+                    <label for="passwordInput">Password</label>
+                    <input id="passwordInput" name="password" type="password" autocomplete="current-password" required>
+                </div>
+                <div class="controls">
+                    <button id="loginButton" type="submit">Log in</button>
+                    <button id="registerButton" type="button" class="secondary">Register</button>
+                </div>
+                <p id="authError" class="auth-error" hidden></p>
+            </form>
+            <div id="authStatus" class="auth-status" hidden>
+                <span>Logged in as <strong id="currentUser"></strong></span>
+                <button id="logoutButton" type="button" class="secondary">Log out</button>
+            </div>
+        </section>
+
         <section class="panel input-panel" aria-labelledby="input-title">
             <h2 id="input-title">Your inventory</h2>
             <label for="inventoryInput">One item per line</label>

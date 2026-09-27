@@ -8,6 +8,15 @@ const statusText = document.getElementById("status");
 const summary = document.getElementById("summary");
 const itemResults = document.getElementById("itemResults");
 const itemList = document.getElementById("itemList");
+const authForm = document.getElementById("authForm");
+const usernameInput = document.getElementById("usernameInput");
+const passwordInput = document.getElementById("passwordInput");
+const loginButton = document.getElementById("loginButton");
+const registerButton = document.getElementById("registerButton");
+const authError = document.getElementById("authError");
+const authStatus = document.getElementById("authStatus");
+const currentUser = document.getElementById("currentUser");
+const logoutButton = document.getElementById("logoutButton");
 function renderMissingSets(sets) {
     summary.hidden = false;
     const missingPartCount = sets.reduce((count, set) => count + set.missingCount, 0);
@@ -105,3 +114,76 @@ button.addEventListener("click", async () => {
         button.textContent = "Check inventory";
     }
 });
+function showLoggedIn(me) {
+    currentUser.textContent = me.username;
+    authStatus.hidden = false;
+    authForm.hidden = true;
+    authError.hidden = true;
+    passwordInput.value = "";
+}
+function showLoggedOut() {
+    authStatus.hidden = true;
+    authForm.hidden = false;
+}
+async function submitCredentials(path) {
+    if (!authForm.reportValidity()) {
+        return;
+    }
+    loginButton.disabled = true;
+    registerButton.disabled = true;
+    authError.hidden = true;
+    try {
+        const response = await fetch(path, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ username: usernameInput.value, password: passwordInput.value }),
+            credentials: "same-origin"
+        });
+        if (!response.ok) {
+            throw new Error((await response.text()).trim());
+        }
+        showLoggedIn(await response.json());
+    }
+    catch (error) {
+        authError.textContent = error instanceof Error ? error.message : String(error);
+        authError.hidden = false;
+    }
+    finally {
+        loginButton.disabled = false;
+        registerButton.disabled = false;
+    }
+}
+async function loadCurrentUser() {
+    try {
+        const response = await fetch("/me", { credentials: "same-origin" });
+        if (response.ok) {
+            showLoggedIn(await response.json());
+        }
+        else {
+            showLoggedOut();
+        }
+    }
+    catch {
+        showLoggedOut();
+    }
+}
+authForm.addEventListener("submit", event => {
+    event.preventDefault();
+    submitCredentials("/login");
+});
+registerButton.addEventListener("click", () => {
+    submitCredentials("/register");
+});
+logoutButton.addEventListener("click", async () => {
+    logoutButton.disabled = true;
+    try {
+        await fetch("/logout", { method: "POST", credentials: "same-origin" });
+    }
+    finally {
+        logoutButton.disabled = false;
+        showLoggedOut();
+    }
+});
+loadCurrentUser();

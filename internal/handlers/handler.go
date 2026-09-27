@@ -10,13 +10,15 @@ type Handler struct {
 	WFCD_API         string
 	cache            *cache.Cache
 	inventoryService *services.InventoryService
+	authService      *services.AuthService
 }
 
-func NewHandler(apiURL, wfcdAPI string, cache *cache.Cache, inventoryService *services.InventoryService) *Handler {
+func NewHandler(apiURL, wfcdAPI string, cache *cache.Cache, inventoryService *services.InventoryService, authService *services.AuthService) *Handler {
 	return &Handler{
 		API_URL:          apiURL,
 		WFCD_API:         wfcdAPI,
 		cache:            cache,
 		inventoryService: inventoryService,
+		authService:      authService,
 	}
 }
