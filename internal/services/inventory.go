@@ -12,16 +12,16 @@ import (
 )
 
 type InventoryService struct {
-	cache     *cache.Cache
-	client    *httpclient.Client
-	marketAPI string
+	cache   *cache.Cache
+	client  *httpclient.Client
+	wfcdAPI string
 }
 
-func NewInventoryService(cache *cache.Cache, client *httpclient.Client, marketAPI string) *InventoryService {
+func NewInventoryService(cache *cache.Cache, client *httpclient.Client, wfcdAPI string) *InventoryService {
 	return &InventoryService{
-		cache:     cache,
-		client:    client,
-		marketAPI: marketAPI,
+		cache:   cache,
+		client:  client,
+		wfcdAPI: wfcdAPI,
 	}
 }
 
@@ -42,7 +42,7 @@ func (s *InventoryService) GetCurrentPrimes() []models.TrimmedItem {
 	}
 
 	resurgenceItems := models.VaultTrader{}
-	if err := s.client.FetchJson("https://api.warframestat.us/pc/vaultTrader", &resurgenceItems); err != nil {
+	if err := s.client.FetchJson(s.wfcdAPI+"/pc/vaultTrader", &resurgenceItems); err != nil {
 		return items
 	}
 	schedule := resurgenceItems.Schedule[len(resurgenceItems.Schedule)-2]

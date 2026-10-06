@@ -1,6 +1,8 @@
 package services
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"warframe-checker/internal/cache"
@@ -20,8 +22,23 @@ func newTestClient() *httpclient.Client {
 	return httpclient.NewDefaultClient()
 }
 
-func TestInventoryService_GetCurrentPrimes(t *testing.T) {
-	c := newTestCache(models.WFCDItem{
+func newFakeWFCDAPI(t *testing.T) *httptest.Server {
+	t.Helper()
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /pc/vaultTrader", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"schedule": [
+			{"expiry": "2026-10-01T18:00:00.000Z", "item": "M P V Banshee Mirage Prime Dual Pack"},
+			{"expiry": "2026-10-29T18:00:00.000Z", "item": "M P V Protea Ivara Prime Dual Pack"},
+			{"expiry": "2026-11-26T18:00:00.000Z"}
+		]}`))
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func newCurrentPrimesTestCache() *cache.Cache {
+	return newTestCache(models.WFCDItem{
 		Name:    "Rhino Prime",
 		Vaulted: true,
 		IsPrime: true,
@@ -34,17 +51,26 @@ func TestInventoryService_GetCurrentPrimes(t *testing.T) {
 		Vaulted: false,
 		IsPrime: false,
 	})
+}
 
-	svc := NewInventoryService(c, newTestClient(), "")
-	vaulted := svc.GetCurrentPrimes()
-	if len(vaulted) != 3 {
-		t.Fatalf("expected 3 items, got %d", len(vaulted))
+func TestInventoryService_GetCurrentPrimes(t *testing.T) {
+	srv := newFakeWFCDAPI(t)
+	svc := NewInventoryService(newCurrentPrimesTestCache(), newTestClient(), srv.URL)
+
+	got := svc.GetCurrentPrimes()
+
+	want := []models.TrimmedItem{
+		{Name: "Caliban Prime", Category: "", Vaulted: false},
+		{Name: "Protea Prime", Category: "Resurgence Frame", Vaulted: false},
+		{Name: "Ivara Prime", Category: "Resurgence Frame", Vaulted: false},
 	}
-	if vaulted[0].Vaulted {
-		t.Error("expected unvaulted item")
+	if len(got) != len(want) {
+		t.Fatalf("expected %d items, got %d: %+v", len(want), len(got), got)
 	}
-	if vaulted[0].Name != "Caliban Prime" {
-		t.Errorf("expected Caliban Prime, got %s", vaulted[0].Name)
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("item %d = %+v, want %+v", i, got[i], want[i])
+		}
 	}
 }
 
@@ -100,14 +126,23 @@ func TestInventoryService_GetVaultedStatus(t *testing.T) {
 		Name:    "Rhino Prime",
 		Vaulted: true,
 		IsPrime: true,
+		Components: []models.WFCDItemComponent{
+			{Name: "Blueprint", Ducats: 100},
+		},
 	}, models.WFCDItem{
 		Name:    "Caliban Prime",
 		Vaulted: false,
 		IsPrime: true,
+		Components: []models.WFCDItemComponent{
+			{Name: "Chassis", Ducats: 15},
+		},
 	}, models.WFCDItem{
 		Name:    "Nekros",
 		Vaulted: false,
 		IsPrime: false,
+		Components: []models.WFCDItemComponent{
+			{Name: "Neuroptics", Ducats: 0},
+		},
 	})
 
 	tests := []struct {
