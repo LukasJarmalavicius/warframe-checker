@@ -143,6 +143,17 @@ func TestInventoryService_GetVaultedStatus(t *testing.T) {
 		Components: []models.WFCDItemComponent{
 			{Name: "Neuroptics", Ducats: 0},
 		},
+	}, models.WFCDItem{
+		Name:    "Daikyu Prime",
+		Vaulted: false,
+		IsPrime: true,
+		Components: []models.WFCDItemComponent{
+			{Name: "Blueprint", Ducats: 15},
+			{Name: "Grip", Ducats: 100},
+			{Name: "Lower Limb", Ducats: 45},
+			{Name: "String", Ducats: 15},
+			{Name: "Upper Limb", Ducats: 45},
+		},
 	})
 
 	tests := []struct {
@@ -155,6 +166,10 @@ func TestInventoryService_GetVaultedStatus(t *testing.T) {
 		{"Rhino", "Rhino prime blueprint", true, 100, false},
 		{"Caliban", "caliban prime chassis", false, 15, false},
 		{"Nekros", "nekros systems", false, 0, true},
+		{"Daikyu blueprint", "Daikyu Prime Blueprint", false, 15, false},
+		{"Daikyu grip", "daikyu prime grip", false, 100, false},
+		{"Daikyu upper limb", "Daikyu Prime Upper Limb", false, 45, false},
+		{"Daikyu lower limb", "daikyu prime lower limb", false, 45, false},
 	}
 
 	svc := NewInventoryService(c, newTestClient(), "")

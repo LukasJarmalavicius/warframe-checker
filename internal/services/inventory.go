@@ -124,9 +124,12 @@ func (s *InventoryService) GetVaultedStatus(itemName string) (bool, int, error) 
 	parentName := lower
 	partName := lower
 	words := strings.Fields(lower)
-	if len(words) > 2 {
-		partName = strings.Title(words[len(words)-1])
-		parentName = strings.Join(words[:2], " ")
+	for i, w := range words {
+		if w == "prime" {
+			parentName = strings.Join(words[:i+1], " ")
+			partName = strings.Join(words[i+1:], " ")
+			break
+		}
 	}
 	var item models.WFCDItem
 	if data, ok := s.cache.Get(parentName); ok {
@@ -137,7 +140,7 @@ func (s *InventoryService) GetVaultedStatus(itemName string) (bool, int, error) 
 		if component.Type == "Resource" {
 			continue
 		}
-		if partName == component.Name {
+		if strings.EqualFold(component.Name, partName) {
 			ducats = component.Ducats
 		}
 	}
