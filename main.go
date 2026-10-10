@@ -40,14 +40,14 @@ func main() {
 	log.Printf("--- Server starting (pid %d) ---\n", os.Getpid())
 	log.Println("Starting server on :8080")
 	cache := cache.NewCache()
-	if err := cache.Load(config.Get("WFCD_JSON")); err != nil {
+	if err := cache.Load(config.Get("WFCD_API")); err != nil {
 		log.Fatalf("failed to load cache: %v", err)
 	}
 
 	client := httpclient.NewDefaultClient()
 	userService := services.NewUserService(db)
 	authService := services.NewAuthService(db, userService)
-	inventoryService := services.NewInventoryService(cache, client, config.Get("API_URL"))
+	inventoryService := services.NewInventoryService(cache, client, config.Get("WFCD_API"))
 	h := handlers.NewHandler(config.Get("API_URL"), config.Get("WFCD_API"), cache, inventoryService, authService)
 	router := handlers.NewRouter(h)
 	srv := &http.Server{

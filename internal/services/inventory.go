@@ -12,16 +12,16 @@ import (
 )
 
 type InventoryService struct {
-	cache     *cache.Cache
-	client    *httpclient.Client
-	marketAPI string
+	cache   *cache.Cache
+	client  *httpclient.Client
+	wfcdAPI string
 }
 
-func NewInventoryService(cache *cache.Cache, client *httpclient.Client, marketAPI string) *InventoryService {
+func NewInventoryService(cache *cache.Cache, client *httpclient.Client, wfcdAPI string) *InventoryService {
 	return &InventoryService{
-		cache:     cache,
-		client:    client,
-		marketAPI: marketAPI,
+		cache:   cache,
+		client:  client,
+		wfcdAPI: wfcdAPI,
 	}
 }
 
@@ -42,7 +42,7 @@ func (s *InventoryService) GetCurrentPrimes() []models.TrimmedItem {
 	}
 
 	resurgenceItems := models.VaultTrader{}
-	if err := s.client.FetchJson("https://api.warframestat.us/pc/vaultTrader", &resurgenceItems); err != nil {
+	if err := s.client.FetchJson(s.wfcdAPI+"/pc/vaultTrader", &resurgenceItems); err != nil {
 		return items
 	}
 	schedule := resurgenceItems.Schedule[len(resurgenceItems.Schedule)-2]
@@ -124,9 +124,12 @@ func (s *InventoryService) GetVaultedStatus(itemName string) (bool, int, error) 
 	parentName := lower
 	partName := lower
 	words := strings.Fields(lower)
-	if len(words) > 2 {
-		partName = strings.Title(words[len(words)-1])
-		parentName = strings.Join(words[:2], " ")
+	for i, w := range words {
+		if w == "prime" {
+			parentName = strings.Join(words[:i+1], " ")
+			partName = strings.Join(words[i+1:], " ")
+			break
+		}
 	}
 	var item models.WFCDItem
 	if data, ok := s.cache.Get(parentName); ok {
@@ -137,7 +140,7 @@ func (s *InventoryService) GetVaultedStatus(itemName string) (bool, int, error) 
 		if component.Type == "Resource" {
 			continue
 		}
-		if partName == component.Name {
+		if strings.EqualFold(component.Name, partName) {
 			ducats = component.Ducats
 		}
 	}

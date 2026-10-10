@@ -38,10 +38,8 @@ func (c *Cache) Get(key string) (models.WFCDItem, bool) {
 
 func (c *Cache) Load(wfcdJSONbase string) error {
 	links := []string{
-		wfcdJSONbase + "Warframes.json",
-		wfcdJSONbase + "Melee.json",
-		wfcdJSONbase + "Primary.json",
-		wfcdJSONbase + "Secondary.json",
+		wfcdJSONbase + "Warframes",
+		wfcdJSONbase + "Weapons",
 	}
 
 	results := make(chan itemResult, len(links))
@@ -68,6 +66,9 @@ func (c *Cache) Load(wfcdJSONbase string) error {
 	newData := make(map[string]models.WFCDItem)
 	for r := range results {
 		for _, item := range r.items {
+			if item.Category != "Warframes" && item.Category != "Primary" && item.Category != "Secondary" && item.Category != "Melee" {
+				continue
+			}
 			newData[strings.ToLower(item.Name)] = item
 		}
 	}
