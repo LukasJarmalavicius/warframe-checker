@@ -1,6 +1,7 @@
 "use strict";
 const input = document.getElementById("inventoryInput");
 const button = document.getElementById("submitButton");
+const loadButton = document.getElementById("loadButton");
 const result = document.getElementById("result");
 const test = document.getElementById("test");
 const check = document.getElementById("jsonCheck");
@@ -57,7 +58,8 @@ function escapeHtml(value) {
     element.textContent = value;
     return element.innerHTML;
 }
-button.addEventListener("click", async () => {
+button.addEventListener("click", checkInventory);
+async function checkInventory() {
     const inventory = input.value.trim();
     let json;
     if (!check.checked) {
@@ -77,6 +79,7 @@ button.addEventListener("click", async () => {
     try {
         test.textContent = (check.checked ? "json\n" : "nojson\n") + json;
         button.disabled = true;
+        loadButton.disabled = true;
         button.textContent = "Checking...";
         statusText.textContent = "Checking inventory...";
         summary.hidden = true;
@@ -111,19 +114,61 @@ button.addEventListener("click", async () => {
     }
     finally {
         button.disabled = false;
+        loadButton.disabled = false;
         button.textContent = "Check inventory";
     }
-});
+}
 function showLoggedIn(me) {
     currentUser.textContent = me.username;
     authStatus.hidden = false;
     authForm.hidden = true;
     authError.hidden = true;
     passwordInput.value = "";
+    loadButton.hidden = false;
+    loadSavedInventory();
 }
 function showLoggedOut() {
     authStatus.hidden = true;
     authForm.hidden = false;
+    loadButton.hidden = true;
+}
+function clearInventory() {
+    input.value = "";
+    test.textContent = "";
+    summary.hidden = true;
+    itemResults.hidden = true;
+    result.className = "empty";
+    result.textContent = "Results will appear here.";
+    statusText.textContent = "Waiting for an inventory check";
+}
+async function loadSavedInventory(overwrite = false) {
+    if (!overwrite && input.value.trim() !== "") {
+        return;
+    }
+    loadButton.disabled = true;
+    try {
+        const response = await fetch("/inventory", { credentials: "same-origin" });
+        if (!response.ok) {
+            throw new Error((await response.text()).trim());
+        }
+        const data = await response.json();
+        if (data.items.length === 0) {
+            statusText.textContent = "No saved inventory yet";
+            return;
+        }
+        check.checked = false;
+        input.value = data.items.map(item => `${item.name}, ${item.quantity}`).join("\n");
+        await checkInventory();
+    }
+    catch {
+        // the automatic load on login stays quiet, only a button click reports
+        if (overwrite) {
+            statusText.textContent = "Saved inventory could not be loaded";
+        }
+    }
+    finally {
+        loadButton.disabled = false;
+    }
 }
 async function submitCredentials(path) {
     if (!authForm.reportValidity()) {
@@ -178,12 +223,17 @@ registerButton.addEventListener("click", () => {
 });
 logoutButton.addEventListener("click", async () => {
     logoutButton.disabled = true;
+    input.value = "";
     try {
         await fetch("/logout", { method: "POST", credentials: "same-origin" });
     }
     finally {
         logoutButton.disabled = false;
         showLoggedOut();
+        clearInventory();
     }
+});
+loadButton.addEventListener("click", () => {
+    loadSavedInventory(true);
 });
 loadCurrentUser();

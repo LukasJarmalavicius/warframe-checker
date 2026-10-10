@@ -1,6 +1,7 @@
 package services
 
 import (
+	"encoding/json"
 	"warframe-checker/internal/models"
 	"warframe-checker/internal/storage"
 )
@@ -46,4 +47,32 @@ func (s *UserService) CreateUser(user *models.User) error {
 	}
 	user.ID = int(id)
 	return nil
+}
+
+func (s *UserService) UpdateInventory(userID int, inventory []models.InventoryItem) error {
+	inventoryJSON, err := json.Marshal(inventory)
+	if err != nil {
+		return err
+	}
+	_, err = s.db.Exec("UPDATE users SET inventoryJSON = ? WHERE id = ?", inventoryJSON, userID)
+	return err
+}
+
+func (s *UserService) GetInventory(userID int) ([]models.InventoryItem, error) {
+	var inventoryJSON []byte
+	err := s.db.QueryRow(
+		"SELECT inventoryJSON FROM users WHERE id = ?", userID,
+	).Scan(&inventoryJSON)
+	if err != nil {
+		return nil, err
+	}
+
+	items := []models.InventoryItem{}
+	if len(inventoryJSON) == 0 {
+		return items, nil
+	}
+	if err := json.Unmarshal(inventoryJSON, &items); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

@@ -3,9 +3,13 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"mime"
 	"net/http"
 	"time"
+
+	"warframe-checker/internal/models"
+	"warframe-checker/internal/services"
 )
 
 const sessionCookieName = "session"
@@ -55,6 +59,29 @@ func clearSessionCookie(w http.ResponseWriter, r *http.Request) {
 		Secure:   r.TLS != nil,
 		SameSite: http.SameSiteLaxMode,
 	})
+}
+
+// currentUser returns the logged in user. If there is none it writes the
+// error response itself and returns false.
+func (h *Handler) currentUser(w http.ResponseWriter, r *http.Request) (*models.User, bool) {
+	cookie, err := r.Cookie(sessionCookieName)
+	if err != nil {
+		http.Error(w, "not logged in", http.StatusUnauthorized)
+		return nil, false
+	}
+
+	user, err := h.authService.Authenticate(cookie.Value)
+	if errors.Is(err, services.ErrInvalidSession) {
+		clearSessionCookie(w, r)
+		http.Error(w, "not logged in", http.StatusUnauthorized)
+		return nil, false
+	}
+	if err != nil {
+		log.Println("failed to authenticate session:", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return nil, false
+	}
+	return user, true
 }
 
 type meResponse struct {

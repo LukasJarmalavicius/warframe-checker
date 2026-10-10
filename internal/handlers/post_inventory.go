@@ -16,6 +16,7 @@ type InventoryRequest struct {
 func (h *Handler) PostInventory(w http.ResponseWriter, r *http.Request) {
 	log.Println("/inventory")
 	var ogReq InventoryRequest
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	if err := json.NewDecoder(r.Body).Decode(&ogReq); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -26,6 +27,14 @@ func (h *Handler) PostInventory(w http.ResponseWriter, r *http.Request) {
 	if len(req) == 0 {
 		http.Error(w, "items cannot be empty", http.StatusBadRequest)
 		return
+	}
+
+	if cookie, err := r.Cookie(sessionCookieName); err == nil {
+		if user, err := h.authService.Authenticate(cookie.Value); err == nil {
+			if err := h.userService.UpdateInventory(user.ID, req); err != nil {
+				log.Println("failed to save inventory:", err)
+			}
+		}
 	}
 
 	maxMissingStr := r.URL.Query().Get("maxMissing")

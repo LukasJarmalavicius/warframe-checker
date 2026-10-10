@@ -69,6 +69,8 @@ func TestInventoryService_GetCurrentPrimes(t *testing.T) {
 
 	want := []models.TrimmedItem{
 		{Name: "Caliban Prime", Category: "", Vaulted: false},
+		{Name: "Styanax Prime", Category: "", Vaulted: false},
+		{Name: "Gyre Prime", Category: "", Vaulted: false},
 		{Name: "Protea Prime", Category: "Resurgence Frame", Vaulted: false},
 		{Name: "Ivara Prime", Category: "Resurgence Frame", Vaulted: false},
 	}

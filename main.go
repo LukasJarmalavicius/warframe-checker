@@ -48,7 +48,7 @@ func main() {
 	userService := services.NewUserService(db)
 	authService := services.NewAuthService(db, userService)
 	inventoryService := services.NewInventoryService(cache, client, config.Get("WFCD_API"))
-	h := handlers.NewHandler(config.Get("API_URL"), config.Get("WFCD_API"), cache, inventoryService, authService)
+	h := handlers.NewHandler(config.Get("API_URL"), config.Get("WFCD_API"), cache, inventoryService, authService, userService)
 	router := handlers.NewRouter(h)
 	srv := &http.Server{
 		Addr:    ":8080",
